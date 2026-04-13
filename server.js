@@ -1,7 +1,6 @@
 const express = require('express')
 const fs = require('fs')
 const path = require('path')
-const Anthropic = require('@anthropic-ai/sdk')
 
 const app = express()
 const PORT = process.env.PORT || 3002
@@ -91,11 +90,11 @@ app.delete('/api/inventory/:id', (req, res) => {
   res.json({ ok: true })
 })
 
-// POST /api/suggest — SSE streaming from Claude
+// POST /api/suggest — SSE streaming from Gemini
 app.post('/api/suggest', async (req, res) => {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' })
+    return res.status(500).json({ error: 'GEMINI_API_KEY not set' })
   }
 
   const db = loadDb()
@@ -126,23 +125,50 @@ ${request ? `リクエスト: ${request}\n\n` : ''}これらの食材を使っ�
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${apiKey}&alt=sse`
+
   try {
-    const client = new Anthropic({ apiKey })
-    const stream = client.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }]
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
     })
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text()
+      console.error('Gemini error:', errText)
+      res.write(`data: ${JSON.stringify({ error: `Gemini API error: ${geminiRes.status}` })}\n\n`)
+      return res.end()
+    }
+
+    const reader = geminiRes.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop()
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (!data || data === '[DONE]') continue
+        try {
+          const parsed = JSON.parse(data)
+          const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text
+          if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`)
+        } catch {}
       }
     }
+
     res.write('data: [DONE]\n\n')
     res.end()
   } catch (err) {
-    console.error('Anthropic error:', err)
+    console.error('Gemini error:', err)
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`)
     res.end()
   }
