@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ごはんメモ</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🍚 ごはんメモ</h1>
+  </header>
+
+  <!-- タブ -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="inventory">📦 在庫</button>
+    <button class="tab-btn" data-tab="suggest">💡 AI提案</button>
+  </nav>
+
+  <!-- 在庫タブ -->
+  <div id="tab-inventory" class="tab-content">
+    <div class="toolbar">
+      <button class="btn-primary" id="btn-add">＋ 食材を追加</button>
+    </div>
+    <div id="inventory-list"></div>
+  </div>
+
+  <!-- AI提案タブ -->
+  <div id="tab-suggest" class="tab-content hidden">
+    <div class="suggest-box">
+      <textarea id="suggest-request" placeholder="リクエストがあれば入力（例：子供が好きなもの、和食で）" rows="2"></textarea>
+      <button class="btn-primary btn-full" id="btn-suggest">✨ 料理を提案してもらう</button>
+    </div>
+    <div id="suggest-result" class="suggest-result hidden"></div>
+  </div>
+
+  <!-- 食材追加モーダル -->
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h2 class="modal-title">食材を追加</h2>
+
+      <label class="field-label">カテゴリ</label>
+      <div id="category-chips" class="chip-row"></div>
+
+      <label class="field-label">食材名</label>
+      <input type="text" id="input-name" class="text-input" placeholder="例：ほうれん草">
+      <div id="name-chips" class="chip-row"></div>
+
+      <label class="field-label">数量</label>
+      <div class="qty-row">
+        <input type="number" id="input-qty" class="text-input qty-input" value="1" min="0" step="0.1">
+        <select id="input-unit" class="unit-select">
+          <option>個</option>
+          <option>本</option>
+          <option>袋</option>
+          <option>パック</option>
+          <option>g</option>
+          <option>kg</option>
+          <option>ml</option>
+          <option>L</option>
+          <option>枚</option>
+          <option>缶</option>
+          <option>本</option>
+          <option>束</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel">キャンセル</button>
+        <button class="btn-primary" id="btn-save">追加</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
