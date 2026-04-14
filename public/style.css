@@ -216,15 +216,52 @@ header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; }
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   font-size: 0.93rem;
   line-height: 1.75;
-  white-space: pre-wrap;
   min-height: 80px;
 }
 
 .suggest-result.loading::after {
   content: '▌';
   animation: blink 0.8s step-end infinite;
+  color: #f97316;
 }
 @keyframes blink { 50% { opacity: 0; } }
+
+.suggest-result .dish-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #c2410c;
+  margin: 20px 0 8px;
+  padding: 10px 12px;
+  background: #fff7ed;
+  border-left: 4px solid #f97316;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+.suggest-result .dish-title:first-child { margin-top: 0; }
+
+.suggest-result .dish-gap { height: 4px; }
+
+.suggest-result p {
+  margin: 4px 0;
+  color: #444;
+}
+
+.suggest-result strong {
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.suggest-result ol,
+.suggest-result ul {
+  margin: 4px 0 8px 1.2em;
+  padding: 0;
+}
+
+.suggest-result li {
+  margin: 3px 0;
+  color: #444;
+  line-height: 1.6;
+}
 
 /* Modal */
 .modal-overlay {

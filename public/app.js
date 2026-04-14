@@ -190,6 +190,50 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   })
 })
 
+// ── Markdown → HTML ───────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function formatInline(text) {
+  return escHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
+function mdToHtml(md) {
+  const lines = md.split('\n')
+  let html = ''
+  let inOl = false
+  let inUl = false
+
+  for (const line of lines) {
+    const isOl = /^\d+\.\s/.test(line)
+    const isUl = /^[-*]\s/.test(line)
+
+    if (!isOl && inOl) { html += '</ol>'; inOl = false }
+    if (!isUl && inUl) { html += '</ul>'; inUl = false }
+
+    if (/^###\s/.test(line)) {
+      html += `<h3 class="dish-title">${formatInline(line.slice(4))}</h3>`
+    } else if (/^##\s/.test(line)) {
+      html += `<h2 class="dish-title">${formatInline(line.slice(3))}</h2>`
+    } else if (isOl) {
+      if (!inOl) { html += '<ol>'; inOl = true }
+      html += `<li>${formatInline(line.replace(/^\d+\.\s/, ''))}</li>`
+    } else if (isUl) {
+      if (!inUl) { html += '<ul>'; inUl = true }
+      html += `<li>${formatInline(line.replace(/^[-*]\s/, ''))}</li>`
+    } else if (line.trim() === '') {
+      html += '<div class="dish-gap"></div>'
+    } else {
+      html += `<p>${formatInline(line)}</p>`
+    }
+  }
+  if (inOl) html += '</ol>'
+  if (inUl) html += '</ul>'
+  return html
+}
+
 // ── AI Suggest ────────────────────────────────────────────
 document.getElementById('btn-suggest').addEventListener('click', async () => {
   const btn = document.getElementById('btn-suggest')
@@ -198,9 +242,11 @@ document.getElementById('btn-suggest').addEventListener('click', async () => {
 
   btn.disabled = true
   btn.textContent = '考え中...'
-  resultEl.textContent = ''
+  resultEl.innerHTML = ''
   resultEl.classList.remove('hidden')
   resultEl.classList.add('loading')
+
+  let accumulated = ''
 
   try {
     const res = await fetch('/api/suggest', {
@@ -232,7 +278,10 @@ document.getElementById('btn-suggest').addEventListener('click', async () => {
         if (data === '[DONE]') break
         try {
           const parsed = JSON.parse(data)
-          if (parsed.text) resultEl.textContent += parsed.text
+          if (parsed.text) {
+            accumulated += parsed.text
+            resultEl.innerHTML = mdToHtml(accumulated)
+          }
           if (parsed.error) resultEl.textContent = 'エラー: ' + parsed.error
         } catch {}
       }
