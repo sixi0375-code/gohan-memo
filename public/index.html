@@ -13,8 +13,10 @@
 
   <!-- タブ -->
   <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="inventory">📦 在庫</button>
-    <button class="tab-btn" data-tab="suggest">💡 AI提案</button>
+    <button class="tab-btn active" data-tab="inventory">📦<span>在庫</span></button>
+    <button class="tab-btn" data-tab="suggest">💡<span>提案</span></button>
+    <button class="tab-btn" data-tab="favorites">❤️<span>保存</span></button>
+    <button class="tab-btn" data-tab="shopping">🛒<span>買い物</span></button>
   </nav>
 
   <!-- 在庫タブ -->
@@ -28,10 +30,23 @@
   <!-- AI提案タブ -->
   <div id="tab-suggest" class="tab-content hidden">
     <div class="suggest-box">
-      <textarea id="suggest-request" placeholder="リクエストがあれば入力（例：子供が好きなもの、和食で）※Gemini AIが提案します" rows="2"></textarea>
+      <textarea id="suggest-request" placeholder="リクエストがあれば入力（例：子供が好きなもの、和食で）" rows="2"></textarea>
       <button class="btn-primary btn-full" id="btn-suggest">✨ 料理を提案してもらう</button>
     </div>
     <div id="suggest-result" class="suggest-result hidden"></div>
+  </div>
+
+  <!-- お気に入りタブ -->
+  <div id="tab-favorites" class="tab-content hidden">
+    <div id="favorites-list"></div>
+  </div>
+
+  <!-- 買い物リストタブ -->
+  <div id="tab-shopping" class="tab-content hidden">
+    <div class="toolbar">
+      <p class="shopping-hint">数量が0になった食材が自動で追加されます</p>
+    </div>
+    <div id="shopping-list"></div>
   </div>
 
   <!-- 食材追加モーダル -->
@@ -60,10 +75,12 @@
           <option>L</option>
           <option>枚</option>
           <option>缶</option>
-          <option>本</option>
           <option>束</option>
         </select>
       </div>
+
+      <label class="field-label">賞味期限（任意）</label>
+      <input type="date" id="input-expiry" class="text-input">
 
       <div class="modal-actions">
         <button class="btn-secondary" id="btn-cancel">キャンセル</button>
