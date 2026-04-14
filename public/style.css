@@ -210,57 +210,89 @@ header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; }
 #suggest-request:focus { border-color: #f97316; }
 
 .suggest-result {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  font-size: 0.93rem;
-  line-height: 1.75;
   min-height: 80px;
 }
 
-.suggest-result.loading::after {
-  content: '▌';
-  animation: blink 0.8s step-end infinite;
+.suggest-loading {
+  text-align: center;
+  padding: 32px 16px;
   color: #f97316;
+  font-size: 1rem;
+  font-weight: 600;
+  animation: pulse 1.2s ease-in-out infinite;
 }
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-.suggest-result .dish-title {
-  font-size: 1.2rem;
+.suggest-error {
+  text-align: center;
+  padding: 24px;
+  color: #ef4444;
+  font-size: 0.93rem;
+  background: white;
+  border-radius: 12px;
+}
+
+/* 料理カード */
+.dish-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px 16px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 12px rgba(249,115,22,0.13);
+  border: 2px solid #fed7aa;
+}
+
+.dish-emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.dish-name {
+  font-size: 1.3rem;
   font-weight: 800;
   color: #c2410c;
-  margin: 20px 0 8px;
+  text-align: center;
+  margin-bottom: 14px;
+  line-height: 1.3;
+}
+
+.dish-section {
+  margin-top: 12px;
+  background: #fafafa;
+  border-radius: 10px;
   padding: 10px 12px;
-  background: #fff7ed;
-  border-left: 4px solid #f97316;
-  border-radius: 6px;
-  line-height: 1.4;
-}
-.suggest-result .dish-title:first-child { margin-top: 0; }
-
-.suggest-result .dish-gap { height: 4px; }
-
-.suggest-result p {
-  margin: 4px 0;
-  color: #444;
 }
 
-.suggest-result strong {
-  color: #9a3412;
+.dish-label {
+  font-size: 0.82rem;
   font-weight: 700;
+  color: #9a3412;
+  margin-bottom: 5px;
 }
 
-.suggest-result ol,
-.suggest-result ul {
-  margin: 4px 0 8px 1.2em;
+.dish-text {
+  font-size: 0.93rem;
+  color: #444;
+  line-height: 1.65;
+}
+
+.dish-steps {
+  margin: 0 0 0 1.1em;
   padding: 0;
 }
 
-.suggest-result li {
-  margin: 3px 0;
+.dish-steps li {
+  font-size: 0.93rem;
   color: #444;
-  line-height: 1.6;
+  line-height: 1.65;
+  margin: 4px 0;
+}
+
+.dish-tip {
+  background: #fff7ed;
+  border-left: 3px solid #f97316;
 }
 
 /* Modal */

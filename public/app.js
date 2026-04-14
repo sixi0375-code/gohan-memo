@@ -190,48 +190,66 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   })
 })
 
-// ── Markdown → HTML ───────────────────────────────────────
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
+// ── Dish card parser ─────────────────────────────────────
+function parseDishes(text) {
+  // ====で区切ってブロックを取得
+  const blocks = text.split(/={3,}/).map(s => s.trim()).filter(s => s.length > 0)
+  if (blocks.length === 0) return ''
 
-function formatInline(text) {
-  return escHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-}
+  return blocks.map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(l => l)
+    if (lines.length === 0) return ''
 
-function mdToHtml(md) {
-  const lines = md.split('\n')
-  let html = ''
-  let inOl = false
-  let inUl = false
+    // 1行目: emoji + 料理名
+    const firstLine = lines[0]
+    // 先頭のemoji（非ASCII・非ひらがな・非漢字）と料理名を分離
+    const m = firstLine.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u)
+    const emoji = m ? m[0] : '🍽️'
+    const name = m ? firstLine.slice(emoji.length).trim() : firstLine
 
-  for (const line of lines) {
-    const isOl = /^\d+\.\s/.test(line)
-    const isUl = /^[-*]\s/.test(line)
+    let ingredients = ''
+    const steps = []
+    let tip = ''
+    let mode = ''
 
-    if (!isOl && inOl) { html += '</ol>'; inOl = false }
-    if (!isUl && inUl) { html += '</ul>'; inUl = false }
-
-    if (/^###\s/.test(line)) {
-      html += `<h3 class="dish-title">${formatInline(line.slice(4))}</h3>`
-    } else if (/^##\s/.test(line)) {
-      html += `<h2 class="dish-title">${formatInline(line.slice(3))}</h2>`
-    } else if (isOl) {
-      if (!inOl) { html += '<ol>'; inOl = true }
-      html += `<li>${formatInline(line.replace(/^\d+\.\s/, ''))}</li>`
-    } else if (isUl) {
-      if (!inUl) { html += '<ul>'; inUl = true }
-      html += `<li>${formatInline(line.replace(/^[-*]\s/, ''))}</li>`
-    } else if (line.trim() === '') {
-      html += '<div class="dish-gap"></div>'
-    } else {
-      html += `<p>${formatInline(line)}</p>`
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.startsWith('食材：')) {
+        ingredients = line.slice(3).trim()
+        mode = ''
+      } else if (line.startsWith('作り方：')) {
+        mode = 'steps'
+        const rest = line.slice(4).trim()
+        if (rest) steps.push(rest)
+      } else if (line.startsWith('ポイント：')) {
+        tip = line.slice(5).trim()
+        mode = ''
+      } else if (mode === 'steps') {
+        steps.push(line.replace(/^\d+\.\s*/, ''))
+      }
     }
-  }
-  if (inOl) html += '</ol>'
-  if (inUl) html += '</ul>'
-  return html
+
+    return `
+      <div class="dish-card">
+        <div class="dish-emoji">${emoji}</div>
+        <div class="dish-name">${esc(name)}</div>
+        ${ingredients ? `
+          <div class="dish-section">
+            <div class="dish-label">🛒 食材</div>
+            <div class="dish-text">${esc(ingredients)}</div>
+          </div>` : ''}
+        ${steps.length > 0 ? `
+          <div class="dish-section">
+            <div class="dish-label">👨‍🍳 作り方</div>
+            <ol class="dish-steps">${steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+          </div>` : ''}
+        ${tip ? `
+          <div class="dish-section dish-tip">
+            <div class="dish-label">💡 ポイント</div>
+            <div class="dish-text">${esc(tip)}</div>
+          </div>` : ''}
+      </div>`
+  }).join('')
 }
 
 // ── AI Suggest ────────────────────────────────────────────
@@ -242,9 +260,8 @@ document.getElementById('btn-suggest').addEventListener('click', async () => {
 
   btn.disabled = true
   btn.textContent = '考え中...'
-  resultEl.innerHTML = ''
+  resultEl.innerHTML = '<div class="suggest-loading">レシピを考えています...</div>'
   resultEl.classList.remove('hidden')
-  resultEl.classList.add('loading')
 
   let accumulated = ''
 
@@ -257,8 +274,7 @@ document.getElementById('btn-suggest').addEventListener('click', async () => {
 
     if (!res.ok) {
       const err = await res.json()
-      resultEl.textContent = 'エラー: ' + (err.error || '不明なエラー')
-      resultEl.classList.remove('loading')
+      resultEl.innerHTML = `<div class="suggest-error">エラー: ${esc(err.error || '不明なエラー')}</div>`
       return
     }
 
@@ -278,18 +294,20 @@ document.getElementById('btn-suggest').addEventListener('click', async () => {
         if (data === '[DONE]') break
         try {
           const parsed = JSON.parse(data)
-          if (parsed.text) {
-            accumulated += parsed.text
-            resultEl.innerHTML = mdToHtml(accumulated)
+          if (parsed.text) accumulated += parsed.text
+          if (parsed.error) {
+            resultEl.innerHTML = `<div class="suggest-error">エラー: ${esc(parsed.error)}</div>`
           }
-          if (parsed.error) resultEl.textContent = 'エラー: ' + parsed.error
         } catch {}
       }
     }
+
+    // ストリーミング完了後にカード描画
+    const html = parseDishes(accumulated)
+    resultEl.innerHTML = html || '<div class="suggest-error">提案を取得できませんでした。もう一度お試しください。</div>'
   } catch (e) {
-    resultEl.textContent = 'エラー: ' + e.message
+    resultEl.innerHTML = `<div class="suggest-error">エラー: ${esc(e.message)}</div>`
   } finally {
-    resultEl.classList.remove('loading')
     btn.disabled = false
     btn.textContent = '✨ 料理を提案してもらう'
   }
